@@ -146,3 +146,55 @@ plt.xlabel('Nos charts do Apple Music')
 plt.ylabel('Em playlists do Apple Music')
 plt.title('Relação entre playlists do Apple Music e seus charts')
 plt.show()
+
+# ====================================================================== #
+
+# Regressão Linear Múltipla
+
+print("\n\n# Regressão Linear Múltipla #\n")
+
+# variáveis independentes (x) e dependente (y)
+X_vars = ['danceability_p', 'energy_p', 'acousticness_p', 'speechiness_p', 'instrumentalness_p']
+y_var = 'streams'
+
+for col in X_vars + [y_var]:
+    df[col] = pd.to_numeric(df[col], errors='coerce')
+
+df_clean = df.dropna(subset=X_vars + [y_var])
+
+# 1º Regressão Linear Múltipla com todas as variáveis
+
+formula = f"{y_var} ~ " + " + ".join(X_vars)
+model_multi = sm.ols(formula=formula, data=df_clean)
+results_multi = model_multi.fit()
+
+print("Regressão múltipla inicial com todas as variáveis:")
+print(results_multi.summary())
+print(f"Coeficiente de determinação (R²): {results_multi.rsquared:.4f}")
+print(f"Coeficiente de determinação ajustado (R² ajustado): {results_multi.rsquared_adj:.4f}")
+
+p_values = results_multi.pvalues[1:] 
+least_significant_var = p_values.idxmax()
+print(f"\nVariável menos significativa: {least_significant_var} (p-valor: {p_values.max():.4f})")
+X_vars_reduced = [var for var in X_vars if var != least_significant_var]
+
+# 2º Regressão Linear Múltipla sem a variável menos significativa
+
+formula_reduced = f"{y_var} ~ " + " + ".join(X_vars_reduced)
+model_multi_reduced = sm.ols(formula=formula_reduced, data=df_clean)
+results_multi_reduced = model_multi_reduced.fit()
+
+print("\nRegressão múltipla após remover a variável menos significativa:")
+print(results_multi_reduced.summary())
+print(f"Coeficiente de determinação (R²): {results_multi_reduced.rsquared:.4f}")
+print(f"Coeficiente de determinação ajustado (R² ajustado): {results_multi_reduced.rsquared_adj:.4f}")
+
+plt.figure(figsize=(10, 6))
+plt.scatter(df_clean[y_var], results_multi_reduced.predict(), alpha=0.5)
+plt.xlabel('Valores Reais')
+plt.ylabel('Valores Previstos')
+plt.title('Valores Reais vs. Previstos - Regressão Múltipla')
+plt.plot([df_clean[y_var].min(), df_clean[y_var].max()], 
+         [df_clean[y_var].min(), df_clean[y_var].max()], 
+         'k--', lw=2)
+plt.show()
